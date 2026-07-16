@@ -1,3 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+data_frambuffa_linuxbsd_x86_64/
+*.x86_64
+*.pck
+*.so
