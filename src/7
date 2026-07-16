@@ -1,0 +1,30 @@
+#pragma once
+
+#include "godot_cpp/classes/compositor_effect.hpp"
+#include "godot_cpp/classes/rendering_device.hpp"
+#include "godot_cpp/variant/rid.hpp"
+#include "godot_cpp/variant/vector2i.hpp"
+#include <cstdint>
+
+namespace godot {
+class Painter : public CompositorEffect {
+
+private:
+  RenderingDevice *rd = nullptr;
+  RID *pipeline = nullptr;
+  RID *shader_rid = nullptr;
+  Vector2i *screen_size = nullptr;
+
+  RID *textureRid = nullptr;
+  RID *textureUniformSet = nullptr;
+  RID *brushTextureRid = nullptr;
+  RID *brushTextureUniformSet = nullptr;
+  RID *samplerRid = nullptr;
+
+public:
+  void InitCompute();
+  void _render_callback(int32_t p_effect_callback_type,
+                        RenderData *p_render_data) override;
+	void notification(int32_t p_what, bool p_reversed = false);
+};
+} // namespace godot

@@ -1,0 +1,2 @@
+---------------------- GD --------------------------
+rss start=508.0 KiB  end=377.0 MiB  peak=377.0 MiB  net=+376.5 MiB  avg=+91.5 MiB/min

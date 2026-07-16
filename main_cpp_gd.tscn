@@ -1,0 +1,119 @@
+[gd_scene format=3 uid="uid://cjb2eqsri7crj"]
+
+[ext_resource type="Shader" uid="uid://dq450rrcjqthr" path="res://shadr.gdshader" id="1_2vlpx"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_h2yge"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_1bvp3"]
+sky_material = SubResource("ProceduralSkyMaterial_h2yge")
+
+[sub_resource type="Environment" id="Environment_lquwl"]
+background_mode = 1
+background_color = Color(0.18717614, 0.18717614, 0.18717614, 1)
+sky = SubResource("Sky_1bvp3")
+ambient_light_source = 2
+ambient_light_color = Color(0.28118682, 0.28118688, 0.28118682, 1)
+ambient_light_energy = 2.01
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1bvp3"]
+render_priority = 0
+shader = ExtResource("1_2vlpx")
+
+[sub_resource type="BoxMesh" id="BoxMesh_7dm0k"]
+lightmap_size_hint = Vector2i(14, 21)
+add_uv2 = true
+
+[sub_resource type="Environment" id="Environment_h2yge"]
+resource_local_to_scene = true
+ambient_light_source = 1
+reflected_light_source = 1
+
+[sub_resource type="PainterCpp" id="PainterCpp_nvqd4"]
+enabled = true
+
+[sub_resource type="Compositor" id="Compositor_1bvp3"]
+compositor_effects = Array[CompositorEffect]([SubResource("PainterCpp_nvqd4")])
+
+[sub_resource type="PlaceholderTexture2D" id="PlaceholderTexture2D_h2yge"]
+
+[node name="Node3D" type="Node3D" unique_id=616328281]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1694359222]
+environment = SubResource("Environment_lquwl")
+
+[node name="Cam" type="Cam" parent="." unique_id=270520774]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 3)
+current = true
+fov = 90.0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1550031441]
+unique_name_in_owner = true
+material_overlay = SubResource("ShaderMaterial_1bvp3")
+mesh = SubResource("BoxMesh_7dm0k")
+
+[node name="SubViewport" type="SubViewport" parent="." unique_id=1574634109]
+transparent_bg = true
+use_hdr_2d = true
+canvas_item_default_texture_filter = 0
+positional_shadow_atlas_size = 0
+size = Vector2i(1152, 648)
+render_target_update_mode = 4
+
+[node name="Camera3D" type="Camera3D" parent="SubViewport" unique_id=1628247711]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 0.9659259, 0.25881907, 0, -0.25881907, 0.9659258, 0, 1, 3)
+cull_mask = 0
+environment = SubResource("Environment_h2yge")
+compositor = SubResource("Compositor_1bvp3")
+fov = 7.3
+size = 0.1
+near = 0.01
+far = 20.0
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=15097184]
+unique_name_in_owner = true
+offset_right = 256.0
+offset_bottom = 256.0
+texture = SubResource("PlaceholderTexture2D_h2yge")
+expand_mode = 2
+stretch_mode = 5
+
+[node name="Label" type="Label" parent="." unique_id=1063693687]
+unique_name_in_owner = true
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -60.0
+offset_top = 7.0
+offset_right = -10.0
+offset_bottom = 30.0
+grow_horizontal = 0
+text = "69 FPS"
+
+[node name="Button" type="Button" parent="." unique_id=1225776892]
+unique_name_in_owner = true
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 37.0
+offset_top = -74.0
+offset_right = 84.0
+offset_bottom = -43.0
+grow_vertical = 0
+text = "QUIT"
+
+[node name="Label2" type="Label" parent="." unique_id=1726386326]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -23.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "CPP_GD"
