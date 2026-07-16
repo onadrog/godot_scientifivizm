@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="frambuffa"
-run/main_scene="uid://eenmtn4dmsjp"
+run/main_scene="uid://ct0kh6o6b48fe"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 

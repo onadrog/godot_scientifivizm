@@ -4,4 +4,18 @@
     <TargetFramework Condition=" '$(GodotTargetPlatform)' == 'android' ">net9.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
+
+    <!-- AOT BEGIN -->
+  <PropertyGroup>
+    <PublishAot>true</PublishAot>
+    <IsAotCompatible>true</IsAotCompatible>
+    <VerifyReferenceAotCompatibility>true</VerifyReferenceAotCompatibility>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+    <ItemGroup>
+        <TrimmerRootAssembly Include="GodotSharp" />
+        <TrimmerRootAssembly Include="$(TargetName)" />
+    </ItemGroup>
+    <!-- AOT END -->
 </Project>

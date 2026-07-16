@@ -1,2 +1,39 @@
----------------------- GD --------------------------
+---------------------- GD -------------------------- ~60fps
 rss start=508.0 KiB  end=377.0 MiB  peak=377.0 MiB  net=+376.5 MiB  avg=+91.5 MiB/min
+
+--------------------- CS -------------------------- ~63fps  ***MEMORY LEAKS***
+
+/bin/bash: ligne 1: a: commande introuvable
+  memory regions growing over the last 110s:
+    [anon]: +5.5 MiB
+    [heap]: +1.3 MiB
+    /home/onadrog/Prog/codeberg_repos/Godot/frambuffa/data_frambuffa_linuxbsd_x86_64/libcoreclr.so: +192.0 KiB
+    /memfd:doublemapper (deleted): +20.0 KiB
+t=   120s  rss= 329.5 MiB  trend=+4.6 MiB/min  r2=0.49  virt=262.9 GiB  anon=117.2 MiB  file=205.6 MiB  fds=61  thr=29
+ALERT t=121s: rss rising steadily at +3.9 MiB/min (r2 0.93) over the last 119s
+  memory regions growing over the last 110s:
+    [anon]: +5.5 MiB
+    [heap]: +1.3 MiB
+    /home/onadrog/Prog/codeberg_repos/Godot/frambuffa/data_frambuffa_linuxbsd_x86_64/libcoreclr.so: +192.0 KiB
+    /memfd:doublemapper (deleted): +20.0 KiB
+t=   121s  rss= 329.5 MiB  trend=+3.9 MiB/min  r2=0.93  virt=262.9 GiB  anon=117.2 MiB  file=205.6 MiB  fds=61  thr=29
+
+--------------------- CPP ------------------------------ ~64fps
+rss start=252.0 KiB  end=287.7 MiB  peak=287.7 MiB  net=+287.5 MiB  avg=+195.5 MiB/mi
+
+------------------- CS AOT ----------------------------- ~61fps  ***MEMORY LEAKS***
+t=   108s  rss= 330.2 MiB  trend=+18.5 MiB/min  r2=0.08  virt=262.7 GiB  anon=118.0 MiB  file=205.6 MiB  fds=61  thr=29
+WARNING: 1 RID of type "Compute" was leaked.
+   at: _free_rids (servers/rendering/rendering_device.cpp:8684)
+WARNING: 2 RIDs of type "UniformSet" were leaked.
+   at: _free_rids (servers/rendering/rendering_device.cpp:8686)
+WARNING: 1 RID of type "Shader" was leaked.
+   at: _free_rids (servers/rendering/rendering_device.cpp:8684)
+WARNING: 1 RID of type "Sampler" was leaked.
+   at: _free_rids (servers/rendering/rendering_device.cpp:8684)
+WARNING: 2 RIDs of type "Texture" were leaked.
+   at: finalize (servers/rendering/rendering_device.cpp:8900)
+process exited or unreadable after 109s
+rss start=84.0 KiB  end=330.2 MiB  peak=330.2 MiB  net=+330.1 MiB  avg=+181.2 MiB/min
+no sustained growth episodes detected
+game exited with exit status: 0
