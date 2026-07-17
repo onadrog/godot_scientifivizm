@@ -1,83 +1,101 @@
-using System.Diagnostics;
 using Godot;
 
 public partial class Cam : Camera3D
 {
-    MeshInstance3D _meshInstance;
+	MeshInstance3D _meshInstance;
 
-    Painter pe;
+	Painter pe;
 
-    TextureRect _texture;
+	TextureRect _texture;
 
-    Camera3D _cam;
+	Camera3D _cam;
 
-    Label label;
+	Label label;
 
-    Button _button;
+	Button _button;
 
-    public override void _Ready()
-    {
+	Viewport _viewport;
 
-        _button = GetNode<Button>("%Button");
-        label = GetNode<Label>("%Label");
-        _cam = GetNode<Camera3D>("%Camera3D");
-        _meshInstance = GetNode<MeshInstance3D>("%MeshInstance3D");
-        _texture = GetNode<TextureRect>("%TextureRect");
-        SetPhysicsProcess(false);
-        foreach (CompositorEffect ce in _cam.Compositor.CompositorEffects)
-        {
-            if (ce is Painter p)
-            {
-                pe = p;
-                break;
-            }
-        }
+	public override void _Ready()
+	{
 
-        Debug.Assert(pe != null);
-        pe.OnRdy += OnRdy;
-        RenderingServer.CallOnRenderThread(Callable.From(pe.InitCompute));
-        _cam.CullMask = 1 << 20;
-        _meshInstance.Layers |=  1 << 20;
+		_button = GetNode<Button>("%Button");
+		label = GetNode<Label>("%Label");
+		_cam = GetNode<Camera3D>("%Camera3D");
+		_meshInstance = GetNode<MeshInstance3D>("%MeshInstance3D");
+		_texture = GetNode<TextureRect>("%TextureRect");
+		_viewport = GetViewport();
+		SetPhysicsProcess(false);
 
-        _button.Pressed += OnQuitPressed;
-    }
-    public void OnRdy(Rid r)
-    {
-        Texture2Drd t = new()
-        {
-            TextureRdRid = r,
-        };
-        (_meshInstance.MaterialOverlay as ShaderMaterial).SetShaderParameter("paintedTexture", t);
-        SetPhysicsProcess(true);
-    }
+		foreach (CompositorEffect ce in _cam.Compositor.CompositorEffects)
+		{
+			if (ce is Painter p)
+			{
+				pe = p;
+				break;
+			}
+		}
 
-    public override void _PhysicsProcess(double delta)
-    {
-        if (Input.IsActionPressed("right"))
-        {
-            _meshInstance.RotateY(1.7f * (float)delta);
-        }
-        else if (Input.IsActionPressed("left"))
-        {
-            _meshInstance.RotateY(-1.7f * (float)delta);
-        }
+		if (pe == null)
+		{
+			GD.PrintErr("[Cam] Painter compositor effect not found on _cam.Compositor");
+			return;
+		}
+		GD.Print("[Cam] Painter effect found, requesting compute init");
 
-        if (Input.IsActionPressed("up"))
-        {
-            _meshInstance.RotateX(1.7f * (float)delta);
-        }
-        else if (Input.IsActionPressed("down"))
-        {
-            _meshInstance.RotateX(-1.7f * (float)delta);
-        }
+		pe.OnRdy += OnRdy;
+		RenderingServer.CallOnRenderThread(Callable.From(pe.InitCompute));
+		_cam.CullMask = 1 << 20;
+		_meshInstance.Layers |= 1 << 20;
 
-        _cam.LookAt(ProjectPosition(GetViewport().GetMousePosition(), 5.0f));
-        label.Text = $"{Engine.GetFramesPerSecond()} FPS";
-    }
+		_button.Pressed += OnQuitPressed;
+	}
+	public void OnRdy(Rid r)
+	{
+		Texture2Drd t = new()
+		{
+			TextureRdRid = r,
+		};
+		(_meshInstance.MaterialOverlay as ShaderMaterial).SetShaderParameter("paintedTexture", t);
+		SetPhysicsProcess(true);
+		GD.Print("[Cam] painted texture bound to mesh overlay, input enabled");
+	}
 
-    void OnQuitPressed()
-    {
-        GetTree().Root.PropagateNotification((int)NotificationWMCloseRequest);
-        GetTree().Quit();
-    }
+	public override void _ExitTree()
+	{
+		if (pe == null) return;
+		(_meshInstance.MaterialOverlay as ShaderMaterial)?.SetShaderParameter("paintedTexture", default);
+		RenderingServer.CallOnRenderThread(Callable.From(pe.Cleanup));
+		GD.Print("[Cam] requested Painter GPU cleanup on render thread");
+	}
+
+	public override void _PhysicsProcess(double delta)
+	{
+		if (Input.IsActionPressed("right"))
+		{
+			_meshInstance.RotateY(1.7f * (float)delta);
+		}
+		else if (Input.IsActionPressed("left"))
+		{
+			_meshInstance.RotateY(-1.7f * (float)delta);
+		}
+
+		if (Input.IsActionPressed("up"))
+		{
+			_meshInstance.RotateX(1.7f * (float)delta);
+		}
+		else if (Input.IsActionPressed("down"))
+		{
+			_meshInstance.RotateX(-1.7f * (float)delta);
+		}
+
+		_cam.LookAt(ProjectPosition(_viewport.GetMousePosition(), 5.0f));
+		label.Text = $"{Engine.GetFramesPerSecond()} FPS";
+	}
+
+	void OnQuitPressed()
+	{
+		GetTree().Root.PropagateNotification((int)NotificationWMCloseRequest);
+		GetTree().Quit();
+	}
 }
