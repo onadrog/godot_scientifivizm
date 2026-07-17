@@ -27,6 +27,7 @@ public partial class Painter : CompositorEffect
 	RDUniform frameBufferUniform;
 	Godot.Collections.Array<RDUniform> frameBufferUniforms;
 	bool firstRenderLogged;
+	int renderCount;
 
 	public void Cleanup()
 	{
@@ -44,7 +45,7 @@ public partial class Painter : CompositorEffect
 		brushTextureUniformSet = default;
 		frameBufferUniform = null;
 		frameBufferUniforms = null;
-		GD.Print("[Painter] GPU resources freed");
+		GD.Print($"[Painter] GPU resources freed after {renderCount} compute dispatches");
 	}
 
 	Painter()
@@ -151,6 +152,7 @@ public partial class Painter : CompositorEffect
 		screenSize = rsb.GetInternalSize();
 		if (screenSize.X == 0 || screenSize.Y == 0) return;
 
+		renderCount++;
 		if (!firstRenderLogged)
 		{
 			firstRenderLogged = true;
