@@ -1,15 +1,15 @@
 shader_type spatial;
 
-uniform sampler2D paintedTexture: source_color;
+const uint BRUSH_CAMERA_LAYER_MASK = 1u << 20u;
+
+uniform sampler2D paintedTexture : source_color, filter_linear, repeat_disable;
 
 void fragment() {
-    bool is_camera_brush = (CAMERA_VISIBLE_LAYERS & (1u << uint(20))) != 0u;
-    if (is_camera_brush) {
+    if ((CAMERA_VISIBLE_LAYERS & BRUSH_CAMERA_LAYER_MASK) != 0u) {
         ALBEDO = vec3(0.0);
         SPECULAR = 0.0;
         EMISSION = vec3(UV - vec2(0.5), -VERTEX.z);
     } else {
-        vec4 clr = texture(paintedTexture, UV);
-        ALBEDO = clr.rrr;
+        ALBEDO = texture(paintedTexture, UV).rrr;
     }
 }
