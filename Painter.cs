@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using Godot;
 
@@ -12,10 +11,13 @@ public partial class Painter : CompositorEffect
 
 	const string SHDERPATH = "uid://ctife0wj6cnkt";
 
+	const uint PAINT_TEXTURE_SIZE = 1024;
+
+	const int GROUP_SIZE = 16;
+
 	RenderingDevice rd;
 	Rid pipeline;
 	Rid shaderRid;
-	Vector2I screenSize;
 
 	Rid textureRid;
 	Rid textureUniformSet;
@@ -26,16 +28,33 @@ public partial class Painter : CompositorEffect
 
 	RDUniform frameBufferUniform;
 	Godot.Collections.Array<RDUniform> frameBufferUniforms;
+
+	Vector2I cachedScreenSize;
+	uint groupsX;
+	uint groupsY;
+
 	bool firstRenderLogged;
 	int renderCount;
 
 	public void Cleanup()
 	{
-		if (rd == null || !shaderRid.IsValid) return;
-		if (textureRid.IsValid) rd.FreeRid(textureRid);
-		if (brushTextureRid.IsValid) rd.FreeRid(brushTextureRid);
-		if (samplerRid.IsValid) rd.FreeRid(samplerRid);
+		if (rd == null || !shaderRid.IsValid)
+			return;
+
+		if (textureUniformSet.IsValid)
+			rd.FreeRid(textureUniformSet);
+		if (brushTextureUniformSet.IsValid)
+			rd.FreeRid(brushTextureUniformSet);
+		if (pipeline.IsValid)
+			rd.FreeRid(pipeline);
+		if (textureRid.IsValid)
+			rd.FreeRid(textureRid);
+		if (brushTextureRid.IsValid)
+			rd.FreeRid(brushTextureRid);
+		if (samplerRid.IsValid)
+			rd.FreeRid(samplerRid);
 		rd.FreeRid(shaderRid);
+
 		textureRid = default;
 		brushTextureRid = default;
 		samplerRid = default;
@@ -45,6 +64,8 @@ public partial class Painter : CompositorEffect
 		brushTextureUniformSet = default;
 		frameBufferUniform = null;
 		frameBufferUniforms = null;
+		cachedScreenSize = default;
+		Enabled = false;
 		GD.Print($"[Painter] GPU resources freed after {renderCount} compute dispatches");
 	}
 
@@ -70,14 +91,14 @@ public partial class Painter : CompositorEffect
 		RDTextureFormat imageFormat = new()
 		{
 			Format = RenderingDevice.DataFormat.R8Unorm,
-			Height = 1024,
-			Width = 1024,
+			Height = PAINT_TEXTURE_SIZE,
+			Width = PAINT_TEXTURE_SIZE,
 			UsageBits = RenderingDevice.TextureUsageBits.CanUpdateBit
 						| RenderingDevice.TextureUsageBits.StorageBit
 						| RenderingDevice.TextureUsageBits.SamplingBit
 		};
 
-		byte[] zeroData = new byte[1024 * 1024];
+		byte[] zeroData = new byte[PAINT_TEXTURE_SIZE * PAINT_TEXTURE_SIZE];
 		textureRid = rd.TextureCreate(imageFormat, new(), [zeroData]);
 
 		RDUniform imageUniform = new()
@@ -94,9 +115,7 @@ public partial class Painter : CompositorEffect
 		brush.ClearMipmaps();
 
 		if (brush.GetFormat() != Image.Format.R8)
-		{
 			brush.Convert(Image.Format.R8);
-		}
 
 		RDTextureFormat brushtextureFormat = new()
 		{
@@ -107,6 +126,7 @@ public partial class Painter : CompositorEffect
 		};
 
 		brushTextureRid = rd.TextureCreate(brushtextureFormat, new(), [brush.GetData()]);
+		Debug.Assert(brushTextureRid.IsValid);
 
 		RDSamplerState samplerState = new()
 		{
@@ -127,7 +147,7 @@ public partial class Painter : CompositorEffect
 		brushUniform.AddId(brushTextureRid);
 
 		brushTextureUniformSet = rd.UniformSetCreate([brushUniform], shaderRid, 2);
-		Debug.Assert(brushTextureRid.IsValid);
+		Debug.Assert(brushTextureUniformSet.IsValid);
 
 		pipeline = rd.ComputePipelineCreate(shaderRid);
 		Debug.Assert(pipeline.IsValid);
@@ -139,6 +159,8 @@ public partial class Painter : CompositorEffect
 		};
 		frameBufferUniforms = [frameBufferUniform];
 
+		LeakSentry.Track(this, "painter-compute");
+
 		EmitSignal(SignalName.OnRdy, textureRid);
 		Enabled = true;
 		GD.Print("[Painter] compute ready, effect enabled");
@@ -146,11 +168,20 @@ public partial class Painter : CompositorEffect
 
 	public override void _RenderCallback(int effectCallbackType, RenderData renderData)
 	{
-		if (!pipeline.IsValid) return;
+		if (!pipeline.IsValid)
+			return;
 
-		RenderSceneBuffersRD rsb = (RenderSceneBuffersRD)renderData.GetRenderSceneBuffers();
-		screenSize = rsb.GetInternalSize();
-		if (screenSize.X == 0 || screenSize.Y == 0) return;
+		using RenderSceneBuffersRD rsb = (RenderSceneBuffersRD)renderData.GetRenderSceneBuffers();
+		Vector2I screenSize = rsb.GetInternalSize();
+		if (screenSize.X == 0 || screenSize.Y == 0)
+			return;
+
+		if (screenSize != cachedScreenSize)
+		{
+			cachedScreenSize = screenSize;
+			groupsX = (uint)(screenSize.X + GROUP_SIZE - 1) / GROUP_SIZE;
+			groupsY = (uint)(screenSize.Y + GROUP_SIZE - 1) / GROUP_SIZE;
+		}
 
 		renderCount++;
 		if (!firstRenderLogged)
@@ -164,12 +195,11 @@ public partial class Painter : CompositorEffect
 		Rid frameBufferUniformSet = UniformSetCacheRD.GetCache(shaderRid, 0, frameBufferUniforms);
 
 		long computeList = rd.ComputeListBegin();
+		rd.ComputeListBindComputePipeline(computeList, pipeline);
 		rd.ComputeListBindUniformSet(computeList, frameBufferUniformSet, 0);
 		rd.ComputeListBindUniformSet(computeList, textureUniformSet, 1);
 		rd.ComputeListBindUniformSet(computeList, brushTextureUniformSet, 2);
-		rd.ComputeListBindComputePipeline(computeList, pipeline);
-		rd.ComputeListDispatch(computeList, (uint)MathF.Ceiling(screenSize.X / 16.0f), (uint)MathF.Ceiling(screenSize.Y / 16.0f), 1);
+		rd.ComputeListDispatch(computeList, groupsX, groupsY, 1);
 		rd.ComputeListEnd();
 	}
-
 }
